@@ -7,6 +7,10 @@ uniform int mask <
     ui_items = "Aperture Grille\0Slot Mask\0Shadow Mask\0Bigger Shadow Mask\0";
 > = 0;
 
+uniform bool blurToggle <
+    ui_label = "Blur";
+> = true;
+
 texture AGSUt { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA16F; };
 sampler AGSUs { Texture = AGSUt; AddressU = BORDER; AddressV = BORDER; };
 
@@ -22,11 +26,35 @@ sampler SMs { Texture = SMt; AddressU = BORDER; AddressV = BORDER; };
 texture ShMt { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA16F; };
 sampler ShMs { Texture = ShMt; AddressU = BORDER; AddressV = BORDER; };
 
+float3 blur(int radius, float2 texcoord1)
+{
+    int divisor = 0;
+	float3 blur = float3(0.0, 0.0, 0.0);
+
+    for(int x = -radius; x <= radius; x++)
+    {
+        for(int y = -floor(sqrt(radius * (radius + 1) - x * x)); y <= floor(sqrt(radius * (radius + 1) - x * x)); y++)
+        {
+            blur += tex2D(ReShade::BackBuffer, float2(texcoord1.x + (BUFFER_RCP_WIDTH * x), texcoord1.y + (BUFFER_RCP_HEIGHT * y))).rgb;
+            divisor++;
+        }
+    }
+
+    return blur / divisor;
+}
+
 float3 ApertureGrilleSetUp(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD) : COLOR
 {
 	if((pos.x + 2) % 3 <= 1)
     {
-		return tex2D(ReShade::BackBuffer, texcoord).rgb;
+        if(blurToggle)
+        {
+		    return blur(2, texcoord);
+        }
+        else
+        {
+            return tex2D(ReShade::BackBuffer, texcoord).rgb;
+        }
 	}
 
 	return 0;
@@ -58,7 +86,14 @@ float3 SlotMaskSetUp(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD)
 {
 	if((pos.x + 3) % 4 <= 1)
     {
-		return tex2D(ReShade::BackBuffer, texcoord).rgb;
+        if(blurToggle)
+        {
+		    return blur(2, texcoord);
+        }
+        else
+        {
+            return tex2D(ReShade::BackBuffer, texcoord).rgb;
+        }
 	}
 
 	return 0;
@@ -100,7 +135,30 @@ float3 SlotMask(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD) : CO
 
 float3 ShadowMask(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD) : COLOR
 {
-	float3 color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+    float3 color;
+
+    if(mask == 2)
+	{
+        if(blurToggle)
+        {
+            color = blur(2, texcoord);
+        }
+        else
+        {
+            color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+        }
+    }
+    if(mask == 3)
+	{
+        if(blurToggle)
+        {
+            color = blur(4, texcoord);
+        }
+        else
+        {
+            color = tex2D(ReShade::BackBuffer, texcoord).rgb;
+        }
+    }
 
 	if(mask == 2)
 	{
