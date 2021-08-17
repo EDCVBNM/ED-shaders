@@ -27,3 +27,8 @@ LumaLines
 PatternShading
 
 ![UnityEmpty3d 2021-07-11 22-15-49](https://user-images.githubusercontent.com/87247738/125217609-7bce7880-e297-11eb-9789-61ff505ad360.png)
+
+
+ThreeColorGradient
+
+![UnityEmpty3d 2021-08-17 12-29-17](https://user-images.githubusercontent.com/87247738/129755538-ba559994-6281-4a08-b773-beeae24819b4.png)
