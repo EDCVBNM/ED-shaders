@@ -7,6 +7,10 @@ uniform int chromaSubType <
     ui_items = " 4:2:2\0 4:2:0\0 4:1:1\0 idk how to name this one\0";
 > = 0;
 
+uniform bool showChroma <
+    ui_label = "Show Only Chroma";
+> = false;
+
 texture chromaSubTex { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
 sampler chromaSubSamp { Texture = chromaSubTex; };
 
@@ -81,7 +85,14 @@ float3 chromaSubSampling(in float4 pos : SV_Position, in float2 texcoord : TEXCO
 
 	color -= lumaSubSampling;
 
-	return color + luma;
+    if(showChroma)
+    {
+        return color;
+    }
+    else
+    {
+        return color + luma;
+    }
 }
 
 technique ChromaSubSampling
