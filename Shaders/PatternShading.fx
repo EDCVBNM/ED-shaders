@@ -9,33 +9,22 @@ uniform float threshold < __UNIFORM_SLIDER_FLOAT1
 uniform int steps <
     ui_label = "Amount of Shades";
     ui_type  = "combo";
-    ui_items = " None\0 1\0 2\0";
-> = 2;
+    ui_items = " 2\0 3\0 4\0 5\0";
+> = 3;
 
-texture blendTex { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; };
-sampler blendSamp { Texture = blendTex; };
-
-float3 preEdgeBlend(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD) : COLOR
-{
-	if(pos.x % 2 <= 1 && pos.y % 2 <= 1)
-	{
-		return tex2D(ReShade::BackBuffer, texcoord).rgb;
-	}
-	else
-	{
-		return 0;
-	}
-}
+uniform bool test <
+> = false;
 
 float3 patternShading(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD) : COLOR
 {
-	int pattern;
-	float edgeBlend = dot(tex2D(blendSamp, texcoord).rgb, 1.0 / 3.0), luma = dot(tex2D(ReShade::BackBuffer, texcoord).rgb, 1.0 / 3.0);
+	int pattern, pattern1, pattern2, pattern3;
+	float luma = dot(tex2D(ReShade::BackBuffer, texcoord).rgb, 1.0 / 3.0);
 
-	edgeBlend = max(edgeBlend, dot(tex2D(blendSamp, float2(texcoord.x + BUFFER_RCP_WIDTH, texcoord.y)).rgb, 1.0 / 3.0));
-	edgeBlend = max(edgeBlend, dot(tex2D(blendSamp, float2(texcoord.x, texcoord.y + BUFFER_RCP_HEIGHT)).rgb, 1.0 / 3.0));
-	edgeBlend = max(edgeBlend, dot(tex2D(blendSamp, float2(texcoord.x + BUFFER_RCP_WIDTH, texcoord.y + BUFFER_RCP_HEIGHT)).rgb, 1.0 / 3.0));
-
+	if(test)
+	{
+		luma = lerp(0.0, 1.0, texcoord.x);
+	}
+	
 	if(pos.x % 2 <= 1 && pos.y % 2 <= 1)
 	{
 		pattern = 0;
@@ -43,6 +32,33 @@ float3 patternShading(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD
 	else
 	{
 		pattern = 1;
+	}
+
+	if((pos.x + 1) % 2 <= 1 && (pos.y - 1) % 2 <= 1)
+	{
+		pattern1 = 1;
+	}
+	else
+	{
+		pattern1 = 0;
+	}
+
+	if(pos.x % 2 <= 1 && (pos.y - 1) % 2 <= 1)
+	{
+		pattern2 = 1;
+	}
+	else
+	{
+		pattern2 = 0;
+	}
+
+	if(pos.x % 2 <= 1 && pos.y % 2 <= 1 || (pos.x + 1) % 2 <= 1 && (pos.y + 1) % 2 <= 1)
+	{
+		pattern3 = 0;
+	}
+	else
+	{
+		pattern3 = 1;
 	}
 
 	if(steps == 0)
@@ -55,7 +71,26 @@ float3 patternShading(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD
 		{
 			pattern = 0;
 		}
-		else if(luma >= threshold * 3)
+		else if(luma <= threshold * 2)
+		{
+			pattern = pattern3;
+		}
+		else if(luma > threshold * 2)
+		{
+			pattern = 1;
+		}
+	}
+	else if(steps == 2)
+	{
+		if(luma <= threshold)
+		{
+			pattern = 0;
+		}
+		else if(luma <= threshold * 2)
+		{
+			pattern = pattern1;
+		}
+		else if(luma > threshold * 3)
 		{
 			pattern = 1;
 		}
@@ -66,11 +101,15 @@ float3 patternShading(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD
 		{
 			pattern = 0;
 		}
-		else if(edgeBlend <= threshold * 2)
+		else if(luma <= threshold * 2)
 		{
-			pattern = 1 - pattern;
+			pattern = pattern2;
 		}
-		else if(luma >= threshold * 4)
+		else if(luma <= threshold * 3)
+		{
+			pattern = pattern3;
+		}
+		else if(luma > threshold * 4)
 		{
 			pattern = 1;
 		}
@@ -82,13 +121,6 @@ float3 patternShading(in float4 pos : SV_Position, in float2 texcoord : TEXCOORD
 technique PatternShading
 {
 	pass pass0
-	{
-		VertexShader = PostProcessVS;
-		PixelShader = preEdgeBlend;
-		RenderTarget = blendTex;
-	}
-
-	pass pass1
 	{
 		VertexShader = PostProcessVS;
 		PixelShader = patternShading;
